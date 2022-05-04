@@ -1,8 +1,9 @@
 require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-etherscan");
 require("dotenv").config();
+const { Wallet } = require("ethers");
 const { MAINNET_URL, RINKEBY_URL, MNEMONIC, ETHER_KEY } = process.env;
-const wallet = require("ethers").Wallet.fromMnemonic(MNEMONIC);
+const wallet = MNEMONIC == null ? Wallet.createRandom() : Wallet.fromMnemonic(MNEMONIC);
 
 const link = (text) => {
     const etherscan = network.name == "rinkeby" ? "https://rinkeby.etherscan.io/address/" : "https://etherscan.io/address/";
