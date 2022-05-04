@@ -43,15 +43,15 @@ module.exports = {
     networks: {
         hardhat: {},
         mainnet: {
-            url: MAINNET_URL,
+            url: MAINNET_URL == null ? "" : MAINNET_URL,
             accounts: [ wallet.privateKey ]
         },
         rinkeby: {
-            url: RINKEBY_URL,
+            url: RINKEBY_URL == null ? "" : RINKEBY_URL,
             accounts: [ wallet.privateKey ]
         },
     },
     etherscan: {
-        apiKey: ETHER_KEY
+        apiKey: ETHER_KEY == null ? "" : ETHER_KEY
     }
 };
