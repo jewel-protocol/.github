@@ -22,8 +22,7 @@ module.exports = {
         "linebreak-style": [ "error", "unix" ],
         "quotes": [ "error", "double" ],
         "semi": [ "error", "always" ],
-        "no-unused-vars": "off",
-        "space-before-function-paren": [ "error", "never" ]
+        "space-before-function-paren": [ "error", { "anonymous": "never", "named": "never", "asyncArrow": "always" }]
     },
     "globals": {
         "ethers": "readonly",

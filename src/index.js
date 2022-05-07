@@ -18,8 +18,8 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const performance = getPerformance(app);
+getAnalytics(app);
+getPerformance(app);
 
 const Root = () => {
     return (

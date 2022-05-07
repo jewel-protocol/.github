@@ -6,10 +6,11 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
+import "hardhat/console.sol";
 
 struct RaffleData {
-    address[] players;
-    mapping(address => uint256) positions;
+    address player;
+    uint256 position;
 }
 
 struct Link {
@@ -23,8 +24,9 @@ struct Link {
 contract Raffle is VRFConsumerBaseV2, Ownable {
     uint256 private _target;
     Link private _link;
-    RaffleData private _currentRaffle;
-    RaffleData[] private _qeueuedRaffles;
+    address[] private _players;
+    mapping(address => uint256) private _positions;
+    mapping(uint256 => RaffleData[][]) private _queuedRaffles;
 
     //TODO: optimize integer types?
 
@@ -40,7 +42,7 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
     }
 
     function position(address id) external view returns (uint256) {
-        return _currentRaffle.positions[id];
+        return _positions[id];
     }
 
     function target() external view returns (uint256) {
@@ -53,8 +55,14 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
         uint256 fee = msg.value / 100;
         payable(owner()).transfer(fee);
 
-        uint256 linkRequests = Math.max(1, address(this).balance / _target);
-        require(numberOfRafflesRemaining() >= linkRequests, "Not enough LINK in subscription to fulfill this request.");
+        uint256 linkRequests = address(this).balance / _target - previous / _target;
+        uint256 partialLinkRequests = address(this).balance % _target > 0 ? 1 : 0;
+        require(numberOfRafflesRemaining() >= linkRequests + partialLinkRequests, "Not enough LINK in subscription to fulfill this request.");
+
+        uint256 requestId;
+        if (linkRequests > 0) {
+            requestId = _link.coordinator.requestRandomWords(_link.keyHash, _link.subscriptionId, 3, 100000, uint32(linkRequests));
+        }
 
         uint256 remaining = msg.value - fee;
 
@@ -62,22 +70,26 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
             uint256 maximum = _target - previous;   
             uint256 current = Math.min(remaining, maximum);
 
-            if (_currentRaffle.positions[msg.sender] == 0) {
-                _currentRaffle.players.push(msg.sender);
+            if (_positions[msg.sender] == 0) {
+                _players.push(msg.sender);
             }
 
-            _currentRaffle.positions[msg.sender] = _currentRaffle.positions[msg.sender] + current;
-            
+            _positions[msg.sender] = _positions[msg.sender] + current;
             remaining -= current;
+
             if (previous + current == _target) {
-                //TODO: add to queued raffles
-                //TODO: clear current raffle
+                uint256 index = _queuedRaffles[requestId].length;
+                _queuedRaffles[requestId].push();
+
+                for (uint256 i = 0; i < _players.length; i++) {
+                    address player = _players[i];
+                    _queuedRaffles[requestId][index].push(RaffleData({player: player, position: _positions[player]}));
+                    delete _positions[player];
+                }
+
+                delete _players;
                 previous = 0;
             }
-        }
-
-        if (_qeueuedRaffles.length > 0) {
-            _link.coordinator.requestRandomWords(_link.keyHash, _link.subscriptionId, 3, 100000, uint32(_qeueuedRaffles.length));
         }
     }
 
@@ -88,7 +100,7 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
 
     function topUPSubscription(uint256 amount) payable external onlyOwner {
         uint256 deposit = (amount / _link.fee) * _link.fee;
-        require(deposit >= 0, "Amount should be greater than 0.25 LINK");
+        require(deposit > 0, "Amount should be greater than 0.25 LINK");
         uint256 allowance = _link.token.allowance(msg.sender, address(this));
         require(allowance >= deposit, "Please approve this contract for spending LINK");
         _link.token.transferFrom(msg.sender, address(this), deposit);
@@ -101,34 +113,22 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
         super.renounceOwnership();
     }
 
-    function fulfillRandomWords(uint256, uint256[] memory randomWords) internal override {
-        // for (uint i = 0; i < randomWords.length; i++) {
-        //     uint256 current = 0;
-        //     for (uint j = 0; j < _players.length; j++) {
-        //         address player = _players[i][j];
-        //         current += _positions[i][player];
+    function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
+        console.log(requestId);
+        for (uint i = 0; i < randomWords.length; i++) {
+            uint256 current = 0;
+            for (uint j = 0; j < _queuedRaffles[requestId].length; j++) {
+                address player = _queuedRaffles[requestId][i][j].player;
+                current += _queuedRaffles[requestId][i][j].position;
 
-        //         if (current > randomWords[i]) {
-        //             payable(player).transfer(_target);
-        //             break;
-        //         }
-        //     }
-        // }
+                if (current > randomWords[i]) {
+                    payable(player).transfer(_target);
+                    break;
+                }
+            }
+            delete _queuedRaffles[requestId][i];
+        }
 
-        // delete _positions;
-        // delete _players;
-
-        
-        // for (uint i = 0; i < _players.length; i++) {
-        //     address player = _players[i];
-        //     current += _positions[player];
-
-        //     if (current > rand) {
-        //         payable(player).transfer(_target);
-        //     }
-
-        //     delete _positions[player];
-        // }
-        
+        delete _queuedRaffles[requestId];        
     }
 }
