@@ -1,7 +1,9 @@
 module.exports = {
     "env": {
         "browser": true,
-        "es2021": true
+        "es2021": true,
+        "mocha": true,
+        "node": true
     },
     "extends": [
         "eslint:recommended",
@@ -22,6 +24,11 @@ module.exports = {
         "semi": [ "error", "always" ],
         "no-unused-vars": "off",
         "space-before-function-paren": [ "error", "never" ]
+    },
+    "globals": {
+        "ethers": "readonly",
+        "task": "readonly",
+        "network": "readonly"
     },
     "settings": {
         "react": {

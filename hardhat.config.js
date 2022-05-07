@@ -8,7 +8,7 @@ const wallet = MNEMONIC == null ? Wallet.createRandom() : Wallet.fromMnemonic(MN
 const link = (text) => {
     const etherscan = network.name == "rinkeby" ? "https://rinkeby.etherscan.io/address/" : "https://etherscan.io/address/";
     return "\u001b]8;;" + etherscan + text.toString() + "\u0007" + text.toString() + "\u001b]8;;\u0007";
-}
+};
 
 task("balance", "Prints an account's balance")
     .addOptionalParam("address", "The wallet's address to look up the balance for")
@@ -41,7 +41,11 @@ module.exports = {
     },
     defaultNetwork: "rinkeby",
     networks: {
-        hardhat: {},
+        hardhat: {
+            forking: {
+                url: RINKEBY_URL == null ? "" : RINKEBY_URL,
+            }
+        },
         mainnet: {
             url: MAINNET_URL == null ? "" : MAINNET_URL,
             accounts: [ wallet.privateKey ]
