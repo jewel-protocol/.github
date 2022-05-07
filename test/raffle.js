@@ -14,7 +14,7 @@ describe("Raffle", () => {
         const contract = await ethers.getContractFactory("Raffle");
         [Owner, NonOwner] = await ethers.getSigners();
         Raffle = await contract.deploy(BigNum, rinkeby.linkToken, rinkeby.linkCoordinator, rinkeby.linkKeyHash);
-        Link = new ethers.Contract(linkAddress, ERC20.abi, Owner);
+        Link = new ethers.Contract(rinkeby.linkToken, ERC20.abi, Owner);
         await Link.approve(Raffle.address, BigNum);
         await Raffle.topUPSubscription(BigNum);
     });
@@ -37,7 +37,7 @@ describe("Raffle", () => {
     it("Should not be able to create a contract with a target lower than 1 ETH", async () => {
         const contract = await ethers.getContractFactory("Raffle");
         assert.rejects(async () => {
-            await contract.deploy(1000, linkAddress, coordinatorAddress, keyHash);
+            await contract.deploy(1000, rinkeby.linkToken, rinkeby.linkCoordinator, rinkeby.linkKeyHash);
         });
     });
 

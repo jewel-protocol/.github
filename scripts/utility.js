@@ -1,7 +1,7 @@
 module.exports = {
     link: (address, text = null) => {
         const etherscan = network.name == "rinkeby" ? "https://rinkeby.etherscan.io/address/" : "https://etherscan.io/address/";
-        const link = etherscan + address.toString()
+        const link = etherscan + address.toString();
         const content = text == null ? address.toString() : text.toString();
         return "\u001b]8;;" + link  + "\u0007" + content + "\u001b]8;;\u0007";
     },

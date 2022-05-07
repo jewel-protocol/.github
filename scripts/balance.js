@@ -9,7 +9,7 @@ task("balance", "Prints an account's balance")
         const signer = await ethers.getSigner(0);
         const account = args.address == null ? signer.address : args.address;
         const precision = args.precision == null ? 2 : args.precision; 
-        let symbol = "ETH"
+        let symbol = "ETH";
         let decimals = 18;
         let balance = ethers.BigNumber.from(0);
         if (args.token == null) {
