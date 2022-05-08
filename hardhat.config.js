@@ -27,20 +27,20 @@ module.exports = {
     networks: {
         hardhat: {
             forking: {
-                url: process.env.RINKEBY_URL == null ? "" : process.env.RINKEBY_URL,
+                url: process.env.RINKEBY_URL,
                 blockNumber: 10639840
             }
         },
         mainnet: {
-            url: process.env.MAINNET_URL == null ? "" : process.env.MAINNET_URL,
+            url: process.env.MAINNET_URL == null ? process.env.RINKEBY_URL : process.env.MAINNET_URL,
             accounts: [ privateKey ]
         },
         rinkeby: {
-            url: process.env.RINKEBY_URL == null ? "" : process.env.RINKEBY_URL,
+            url: process.env.RINKEBY_URL,
             accounts: [ privateKey ]
         },
     },
     etherscan: {
-        apiKey: process.env.ETHER_KEY == null ? "" : process.env.ETHER_KEY
+        apiKey: process.env.ETHER_KEY
     }
 };

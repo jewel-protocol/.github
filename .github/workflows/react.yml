@@ -51,6 +51,8 @@ jobs:
       run: |
         npm ci
         npm run test
+      env:
+        RINKEBY_URL: ${{ secrets.RINKEBY_URL }}
 
   deploy:
     runs-on: ubuntu-latest
