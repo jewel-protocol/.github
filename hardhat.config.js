@@ -1,12 +1,15 @@
 require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-etherscan");
 require("dotenv").config();
-const fs = require("fs");
-const { Wallet } = require("ethers");
-const { MAINNET_URL, RINKEBY_URL, MNEMONIC, ETHER_KEY } = process.env;
-const wallet = MNEMONIC == null ? Wallet.createRandom() : Wallet.fromMnemonic(MNEMONIC);
 
-fs.readdirSync("./scripts")
+let privateKey = "";
+if (process.env.MNEMONIC == null) {
+    privateKey = require("ethers").Wallet.createRandom().privateKey;
+} else {
+    privateKey = require("ethers").Wallet.fromMnemonic(process.env.MNEMONIC).privateKey;
+}
+
+require("fs").readdirSync("./scripts")
     .filter(x => x.endsWith(".js"))
     .map(x => "./scripts/" + x)
     .forEach(require);
@@ -21,23 +24,23 @@ module.exports = {
             },
         },
     },
-    defaultNetwork: "rinkeby",
     networks: {
         hardhat: {
             forking: {
-                url: RINKEBY_URL == null ? "" : RINKEBY_URL,
+                url: process.env.RINKEBY_URL == null ? "" : process.env.RINKEBY_URL,
+                blockNumber: 10639840
             }
         },
         mainnet: {
-            url: MAINNET_URL == null ? "" : MAINNET_URL,
-            accounts: [ wallet.privateKey ]
+            url: process.env.MAINNET_URL == null ? "" : process.env.MAINNET_URL,
+            accounts: [ privateKey ]
         },
         rinkeby: {
-            url: RINKEBY_URL == null ? "" : RINKEBY_URL,
-            accounts: [ wallet.privateKey ]
+            url: process.env.RINKEBY_URL == null ? "" : process.env.RINKEBY_URL,
+            accounts: [ privateKey ]
         },
     },
     etherscan: {
-        apiKey: ETHER_KEY == null ? "" : ETHER_KEY
+        apiKey: process.env.ETHER_KEY == null ? "" : process.env.ETHER_KEY
     }
 };

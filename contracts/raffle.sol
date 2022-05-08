@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
-import "hardhat/console.sol";
 
 struct RaffleData {
     address player;
@@ -114,7 +113,6 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
     }
 
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
-        console.log(requestId);
         for (uint i = 0; i < randomWords.length; i++) {
             uint256 current = 0;
             for (uint j = 0; j < _queuedRaffles[requestId].length; j++) {

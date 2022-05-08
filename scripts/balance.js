@@ -1,33 +1,28 @@
-const link = require("./utility").link;
-const ERC20 = require("@openzeppelin/contracts/build/contracts/ERC20.json");
+const config = require("hardhat/config");
+const link = require("../utility/log").linkAddress;
+const format = require("../utility/log").formatAmount;
+const ERC20 = require("@openzeppelin/contracts/build/contracts/ERC20.json").abi;
 
-task("balance", "Prints an account's balance")
+config.task("balance", "Prints an account's balance")
     .addOptionalParam("address", "The wallet's address to look up the balance for")
     .addOptionalParam("token", "The token's address to look up the balance for")
     .addOptionalParam("precision", "The precision for printing the balance")
     .setAction(async (args) => {
-        const signer = await ethers.getSigner(0);
+        const signer = await hre.ethers.getSigner(0);
         const account = args.address == null ? signer.address : args.address;
-        const precision = args.precision == null ? 2 : args.precision; 
+        const precision = isNaN(args.precision) ? 2 : parseInt(args.precision);
         let symbol = "ETH";
         let decimals = 18;
-        let balance = ethers.BigNumber.from(0);
+        let balance = hre.ethers.BigNumber.from(0);
         if (args.token == null) {
-            balance = await ethers.provider.getBalance(account);            
+            balance = await hre.ethers.provider.getBalance(account);            
         } else {
-            const contract = new ethers.Contract(args.token, ERC20.abi, signer);
+            const contract = new hre.ethers.Contract(args.token, ERC20, signer);
             balance = await contract.balanceOf(account);
             symbol = await contract.symbol();
             decimals = await contract.decimals();
         }
 
-        const base = ethers.BigNumber.from(10);
-        const rounding = Math.max(Math.min(balance.toString().length, decimals) - precision, 0);
-        const left = rounding - decimals;
-        const rounded = balance.div(base.pow(rounding)).toNumber();
-        const formatted = rounded * 10 ** left;
-        const formattedSymbol = args.token == null ? symbol : link(args.token, symbol);
-        const formattedAmount = formatted.toFixed(-left) + " " + formattedSymbol;
-
+        const formattedAmount = format(balance, symbol, args.token, decimals, precision);
         console.log("Account " + link(account.toLowerCase()) + " has " + formattedAmount);
     });
