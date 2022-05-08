@@ -1,7 +1,7 @@
 const config = require("hardhat/config");
 const link = require("../utility/log").linkAddress;
 const format = require("../utility/log").formatAmount;
-const ERC20 = require("@openzeppelin/contracts/build/contracts/ERC20.json").abi;
+const ERC20Abi = require("@openzeppelin/contracts/build/contracts/ERC20.json").abi;
 
 config.task("balance", "Prints an account's balance")
     .addOptionalParam("address", "The wallet's address to look up the balance for")
@@ -17,7 +17,7 @@ config.task("balance", "Prints an account's balance")
         if (args.token == null) {
             balance = await hre.ethers.provider.getBalance(account);            
         } else {
-            const contract = new hre.ethers.Contract(args.token, ERC20, signer);
+            const contract = new hre.ethers.Contract(args.token, ERC20Abi, signer);
             balance = await contract.balanceOf(account);
             symbol = await contract.symbol();
             decimals = await contract.decimals();

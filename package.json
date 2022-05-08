@@ -13,7 +13,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "npx hardhat test --network hardhat",
+    "test": "hardhat compile && mocha",
     "deploy": "npm run build && gh-pages -d build",
     "lint": "eslint --fix --ext .js ."
   },

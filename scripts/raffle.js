@@ -4,8 +4,7 @@ const linkTransaction = require("../utility/log").linkTransaction;
 const format = require("../utility/log").formatAmount;
 const mainnet = require("../utility/constants").mainnet;
 const rinkeby = require("../utility/constants").rinkeby;
-const Raffle = require("../artifacts/contracts/raffle.sol/Raffle.json").abi;
-const ERC20 = require("@openzeppelin/contracts/build/contracts/ERC20.json").abi;
+const ERC20Abi = require("@openzeppelin/contracts/build/contracts/ERC20.json").abi;
 
 config.task("raffle", "Tasks related to the Raffle smart Contract")
     .addPositionalParam("subtask", "The subcommand to execute")
@@ -31,10 +30,11 @@ config.subtask("raffle-fund", "Funds a Raffle smart contract with LINK")
     .setAction(async (args) => {
         const owner = await hre.ethers.getSigner(0);
         const amount = isNaN(args.amount) ? hre.ethers.BigNumber.from(10).pow(18) : hre.ethers.BigNumber.from(args.amount);
-        const raffle = new hre.ethers.Contract(args.address, Raffle, owner);
+        const RaffleAbi = hre.artifacts.readArtifact("Raffle");
+        const raffle = new hre.ethers.Contract(args.address, RaffleAbi, owner);
 
         const constants = hre.network.name == "mainnet" ? mainnet : rinkeby;
-        const link = new hre.ethers.Contract(constants.linkToken, ERC20, owner);
+        const link = new hre.ethers.Contract(constants.linkToken, ERC20Abi, owner);
         const approveTx = await link.approve(raffle.address, amount);
         const topUpTx = await raffle.topUPSubscription(amount);
 

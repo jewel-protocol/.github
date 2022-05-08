@@ -1,6 +1,6 @@
 const assert = require("assert");
-const ERC20 = require("@openzeppelin/contracts/build/contracts/ERC20.json").abi;
 const rinkeby = require("../utility/constants").rinkeby;
+const ERC20Abi = require("@openzeppelin/contracts/build/contracts/ERC20.json").abi;
 
 describe("Raffle", () => {
     describe("Contract", () => {
@@ -15,7 +15,7 @@ describe("Raffle", () => {
             const contract = await hre.ethers.getContractFactory("Raffle");
             [Owner, NonOwner] = await hre.ethers.getSigners();
             Raffle = await contract.deploy(BigNum, rinkeby.linkToken, rinkeby.linkCoordinator, rinkeby.linkKeyHash);
-            Link = new hre.ethers.Contract(rinkeby.linkToken, ERC20, Owner);
+            Link = new hre.ethers.Contract(rinkeby.linkToken, ERC20Abi, Owner);
             await Link.approve(Raffle.address, BigNum);
             await Raffle.topUPSubscription(BigNum);
         });
