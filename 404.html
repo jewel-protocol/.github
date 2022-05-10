@@ -4,8 +4,10 @@
         <meta charset="utf-8">
         <title>Redirecting to jewel.cash</title>
         <script type="text/javascript">
-            let l = window.location;
-            l.replace(l.protocol + "//" + l.hostname + (l.port ? ":" + l.port : "") + (l.search ? "&" + l.search : "") + l.hash);
+            const l = window.location;
+            const port = l.port ? `:${l.port}` : "";
+            const search = l.search ? `&${l.search}` : ""
+            l.replace(`${l.protocol}//${l.hostname}${port}${search}${l.hash}`);
         </script>
     </head>
     <body>
