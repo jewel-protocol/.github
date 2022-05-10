@@ -1,22 +1,22 @@
+const constants = require("./constants");
 
 const link = (link, text) => {
-    const etherscan = hre.network.name == "mainnet" ? "https://etherscan.io/" : "https://rinkeby.etherscan.io/";
-    return "\u001b]8;;" + etherscan + link.toString() + "\u0007" + text.toString() + "\u001b]8;;\u0007";
+    return `\u001b]8;;${constants[hre.network.name].etherscan}${link.toString()}\u0007${text.toString()}\u001b]8;;\u0007`;
 };
 
 const linkAddress = (address, text = null) => {
     const content = text == null ? address : text;
-    return link("address/" + address, content);
+    return link(`address/${address}`, content);
 };
 
 const linkTransaction = (hash, text = null) => {
     const content = text == null ? hash : text;
-    return link("tx/" + hash, content);
+    return link(`tx/${hash}`, content);
 };
 
 const linkBlock = (block, text = null) => {
     const content = text == null ? block : text;
-    return link("block/" + block, content);
+    return link(`block/${block}`, content);
 };
 
 module.exports = {
@@ -41,6 +41,6 @@ module.exports = {
         const rounded = amount.div(base.pow(rounding)).toNumber();
         const formatted = rounded * 10 ** left;
         const formattedSymbol = token == null ? symbol : linkAddress(token, symbol);
-        return formatted.toFixed(-left) + " " + formattedSymbol;
+        return `${formatted.toFixed(-left)} ${formattedSymbol}`;
     }
 };

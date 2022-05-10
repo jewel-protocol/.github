@@ -7,12 +7,10 @@ describe("Balance", () => {
 
     it("Should return token balance for a given account address", async () => {
         const log = captureLog();
-        await hre.run("balance", { address: acc, token: usdc, precision: "3" });
+        await hre.run("balance", { account: acc, token: usdc, precision: "3" });
         log.unhook();
         const actual = log.captured().split(" ");
-        assert(actual[0] === "Account", `${actual[0]} !== ${"Account"}`);
         assert(actual[1].includes(acc), `${acc} not in ${actual[1]}`);
-        assert(actual[2] === "has", `${actual[2]} !== ${"has"}`);
         assert(actual[3] === "418690.110", `${actual[3]} !== ${"418690.110"}`);
         assert(actual[4].includes(usdc), `${usdc} not in ${actual[4]}`);
         assert(actual[4].includes("USDC"), `${"USDC"} not in ${actual[4]}`);
@@ -20,12 +18,10 @@ describe("Balance", () => {
 
     it("Should return ETH balance if no token address is specified", async () => {
         const log = captureLog();
-        await hre.run("balance", { address: acc, precision: "3" });
+        await hre.run("balance", { account: acc, precision: "3" });
         log.unhook();
         const actual = log.captured().split(" ");
-        assert(actual[0] === "Account", `${actual[0]} !== ${"Account"}`);
         assert(actual[1].includes(acc), `${acc} not in ${actual[1]}`);
-        assert(actual[2] === "has", `${actual[2]} !== ${"has"}`);
         assert(actual[3] === "43.117", `${actual[3]} !== ${"43.117"}`);
         assert(actual[4].includes("ETH"), `${"ETH"} not in ${actual[4]}`);
     });
@@ -37,9 +33,7 @@ describe("Balance", () => {
         await hre.run("balance", { token: usdc, precision: "3" });
         log.unhook();
         const actual = log.captured().split(" ");
-        assert(actual[0] === "Account", `${actual[0]} !== ${"Account"}`);
         assert(actual[1].includes(address), `${address} not in ${actual[1]}`);
-        assert(actual[2] === "has", `${actual[2]} !== ${"has"}`);
         assert(actual[3] === "3018301506249.757", `${actual[3]} !== ${"3018301506249.757"}`);
         assert(actual[4].includes(usdc), `${usdc} not in ${actual[4]}`);
         assert(actual[4].includes("USDC"), `${"USDC"} not in ${actual[4]}`);
@@ -47,12 +41,10 @@ describe("Balance", () => {
 
     it("Should print the amount with two precision of no precision is specified", async () => {
         const log = captureLog();
-        await hre.run("balance", { address: acc, token: usdc });
+        await hre.run("balance", { account: acc, token: usdc });
         log.unhook();
         const actual = log.captured().split(" ");
-        assert(actual[0] === "Account", `${actual[0]} !== ${"Account"}`);
         assert(actual[1].includes(acc), `${acc} not in ${actual[1]}`);
-        assert(actual[2] === "has", `${actual[2]} !== ${"has"}`);
         assert(actual[3] === "418690.11", `${actual[3]} !== ${"418690.11"}`);
         assert(actual[4].includes(usdc), `${usdc} not in ${actual[4]}`);
         assert(actual[4].includes("USDC"), `${"USDC"} not in ${actual[4]}`);
