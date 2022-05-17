@@ -5,6 +5,10 @@ describe("Balance", () => {
     const acc = "0x869ec00fa1dc112917c781942cc01c68521c415e";
     const usdc = "0xeb8f08a975ab53e34d8a0330e0d34de942c95926";
 
+    beforeEach(async () => {
+        if (hre.network.name !== "hardhat") { throw Error("Should only run tests on local hardhat network."); }
+    });
+
     it("Should return token balance for a given account address", async () => {
         const log = captureLog();
         await hre.run("balance", { account: acc, token: usdc, precision: "3" });

@@ -9,6 +9,11 @@ const linkAddress = (address, text = null) => {
     return link(`address/${address}`, content);
 };
 
+const linkToken = (token, text = null) => {
+    const content = text == null ? token : text;
+    return link(`token/${token}`, content);
+};
+
 const linkTransaction = (hash, text = null) => {
     const content = text == null ? hash : text;
     return link(`tx/${hash}`, content);
@@ -32,6 +37,7 @@ module.exports = {
         };
     },
     linkTransaction: linkTransaction,
+    linkToken: linkToken,
     linkAddress: linkAddress,
     linkBlock: linkBlock,
     formatAmount: (amount, symbol, token, decimals, precision) => {
@@ -40,7 +46,7 @@ module.exports = {
         const left = rounding - decimals;
         const rounded = amount.div(base.pow(rounding)).toNumber();
         const formatted = rounded * 10 ** left;
-        const formattedSymbol = token == null ? symbol : linkAddress(token, symbol);
+        const formattedSymbol = token == null ? symbol : linkToken(token, symbol);
         return `${formatted.toFixed(-left)} ${formattedSymbol}`;
     }
 };

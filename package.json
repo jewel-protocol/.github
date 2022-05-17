@@ -13,6 +13,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "clean": "rm -r ./build",
     "test": "hardhat compile && mocha",
     "deploy": "npm run build && gh-pages -d build",
     "lint": "eslint --fix --ext .js ."
@@ -30,11 +31,8 @@
     ]
   },
   "devDependencies": {
-    "@chainlink/contracts": "^0.4.0",
     "@nomiclabs/hardhat-ethers": "^2.0.5",
     "@nomiclabs/hardhat-etherscan": "^3.0.3",
-    "@openzeppelin/contracts": "^4.5.0",
-    "@uniswap/v3-sdk": "^3.8.2",
     "dotenv": "^16.0.0",
     "eslint": "^8.12.0",
     "eslint-plugin-import": "^2.26.0",

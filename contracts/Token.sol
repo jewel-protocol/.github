@@ -1,66 +1,61 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: OTHER
 pragma solidity ^0.8.0;
 
-import "./Game.sol";
-import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "./Whitelisted.sol";
+import "./interfaces/IGame.sol";
+import "./interfaces/ILinkCoordinator.sol";
+import "./interfaces/ILinkToken.sol";
+import "./interfaces/ISwapRouter.sol";
+import "./interfaces/IWETH.sol";
 
-
-interface IWETH9 is IERC20 {
-    function withdraw(uint256) external;
-}
-
-struct Uniswap {
-    address weth;
-    address swapRouter;
-}
-
-struct Link {
-    uint256 fee;
-    uint64 subscriptionId;
-    bytes32 keyHash;
-    address coordinator;
-    address token;
-}
-
-contract Jewel is IERC20, IERC20Metadata, Ownable {
-    string public constant override name = "Jewel Protocol";
-    string public constant override symbol = "JEWEL";
-    uint256 public constant sypplyCap = 10 ** 24;
-    uint8 public constant override decimals = 18;
-    uint256 public override totalSupply;
+contract JewelToken is Whitelisted {
+    string public name = "Jewel Protocol";
+    string public symbol = "JWL";
+    uint256 public sypplyCap = 10 ** 24;
+    uint8 public decimals = 18;
+    uint256 public totalSupply;
 
     Link private _link;
     Uniswap private _uniswap;
     mapping(uint256 => address) private _randomRequests;
 
-    mapping(address => uint256) private _balances;
-    mapping(address => mapping(address => uint256)) private _allowances;
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
 
     uint256 private _pendingYield;
     int256 private _yieldPerUnit;
     mapping(address => int256) private _redeemedYield;
 
-    mapping(address => bool) private _games;
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+    //TODO: EVent for in out ETH?
+    
+    struct Link {
+        uint256 fee;
+        uint64 subscriptionId;
+        bytes32 keyHash;
+        address coordinator;
+        address token;
+    }
+
+    struct Uniswap {
+        address weth;
+        address swapRouter;
+    }
 
     constructor(address linkAddress, address linkCoordinator, bytes32 linkKeyHash, address wethAddress, address swapRouterAddress) {
         _link.fee = 0.25 * 10 ** 18;
         _link.coordinator = linkCoordinator;
         _link.token = linkAddress;
         _link.keyHash = linkKeyHash;
-        _link.subscriptionId = VRFCoordinatorV2Interface(_link.coordinator).createSubscription();
-        VRFCoordinatorV2Interface(_link.coordinator).addConsumer(_link.subscriptionId, address(this));
+        _link.subscriptionId = ILinkCoordinator(_link.coordinator).createSubscription();
+        ILinkCoordinator(_link.coordinator).addConsumer(_link.subscriptionId, address(this));
         _uniswap.weth = wethAddress;
         _uniswap.swapRouter = swapRouterAddress;
     }
 
     receive() external payable {
-        if (_games[msg.sender]) {
+        if (isWhitelisted[msg.sender]) {
             uint256 yield = msg.value + _pendingYield;
             unchecked {
                 _yieldPerUnit += int256(yield / totalSupply);
@@ -70,32 +65,24 @@ contract Jewel is IERC20, IERC20Metadata, Ownable {
             require(totalSupply + msg.value <= sypplyCap, "Jewel: supply cap exceeded");
             unchecked {
                 totalSupply += msg.value;
-                _balances[msg.sender] += msg.value;
+                balanceOf[msg.sender] += msg.value;
                 _redeemedYield[msg.sender] += _yieldPerUnit * int256(msg.value);
             }
             emit Transfer(address(0), msg.sender, msg.value);
         }
     }
 
-    function balanceOf(address account) external view override returns (uint256) {
-        return _balances[account];
-    }
-
-    function allowance(address holder, address spender) public view override returns (uint256) {
-        return _allowances[holder][spender];
-    }
-
     function yieldAllowance(address account) public view returns (int256) {
-        int256 allowedYield = _yieldPerUnit * int256(_balances[account]);
+        int256 allowedYield = _yieldPerUnit * int256(balanceOf[account]);
         return allowedYield - _redeemedYield[account];
     }
 
     function withdraw(uint256 amount) external {
-        require(_balances[msg.sender] >= amount, "Jewel: withdrawal amount exceeds balance");
+        require(balanceOf[msg.sender] >= amount, "Jewel: withdrawal amount exceeds balance");
         require(yieldAllowance(msg.sender) >= 0, "Jewel: must forfeit negative dividends first");
         unchecked {
             totalSupply -= amount;
-            _balances[msg.sender] -= amount;
+            balanceOf[msg.sender] -= amount;
         }
         payable(msg.sender).transfer(amount);
         emit Transfer(msg.sender, address(0), amount);
@@ -105,13 +92,13 @@ contract Jewel is IERC20, IERC20Metadata, Ownable {
         require(yieldAllowance(msg.sender) <= -int256(amount), "Jewel: forfeit amount exceeds negative yield");
         unchecked {
             _redeemedYield[msg.sender] -= int256(amount);
-            _balances[msg.sender] -= amount;
+            balanceOf[msg.sender] -= amount;
             totalSupply -= amount;
         }
         emit Transfer(msg.sender, address(0), amount);
     }
 
-    function payout(uint256 amount, address to) public onlyGame {
+    function payout(address to, uint256 amount) public onlyWhitelisted {
         require(to != address(0), "Jewel: cannot payout to the zero address");
         if (amount < _pendingYield) {
             unchecked {
@@ -127,7 +114,7 @@ contract Jewel is IERC20, IERC20Metadata, Ownable {
         payable(to).transfer(amount);
     }
 
-    function withdrawYield(uint256 amount) external {
+    function withdrawYieldAsEth(uint256 amount) external {
         require(yieldAllowance(msg.sender) >= int256(amount), "Jewel: withdrawal amount exceeds yield");
         unchecked {
             _redeemedYield[msg.sender] += int256(amount);
@@ -135,33 +122,44 @@ contract Jewel is IERC20, IERC20Metadata, Ownable {
         payable(msg.sender).transfer(amount);
     }
 
-    function transfer(address to, uint256 amount) external override returns (bool) {
-        require(to != address(0), "Jewel: cannot transfer to the zero address");
-        require(_balances[msg.sender] >= amount, "Jewel: transfer amount exceeds balance");
+    function withdrawYieldAsJWL(uint256 amount) external {
+        require(yieldAllowance(msg.sender) >= int256(amount), "Jewel: withdrawal amount exceeds yield");
+        require(totalSupply + amount <= sypplyCap, "Jewel: supply cap exceeded");
         unchecked {
-            _balances[msg.sender] -= amount;
-            _balances[to] += amount;
+            totalSupply += amount;
+            balanceOf[msg.sender] += amount;
+            _redeemedYield[msg.sender] += int256(amount);
+        }
+        emit Transfer(address(0), msg.sender, amount);
+    }
+
+    function transfer(address to, uint256 amount) external returns (bool) {
+        require(to != address(0), "Jewel: cannot transfer to the zero address");
+        require(balanceOf[msg.sender] >= amount, "Jewel: transfer amount exceeds balance");
+        unchecked {
+            balanceOf[msg.sender] -= amount;
+            balanceOf[to] += amount;
         }
         emit Transfer(msg.sender, to, amount);
         return true;
     }
 
-    function approve(address spender, uint256 amount) external override returns (bool) {
+    function approve(address spender, uint256 amount) external returns (bool) {
         require(spender != address(0), "Jewel: cannot approve the zero address");
-        _allowances[msg.sender][spender] = amount;
+        allowance[msg.sender][spender] = amount;
         emit Approval(msg.sender, spender, amount);
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 amount) external override returns (bool) {
+    function transferFrom(address from, address to, uint256 amount) external returns (bool) {
         require(from != address(0), "Jewel: cannot transfer from the zero address");
         require(to != address(0), "Jewel: cannot transfer to the zero address");
-        require(_allowances[from][msg.sender] >= amount, "Jewel: insufficient allowance");
-        require(_balances[from] >= amount, "Jewel: transfer amount exceeds balance");
+        require(allowance[from][msg.sender] >= amount, "Jewel: insufficient allowance");
+        require(balanceOf[from] >= amount, "Jewel: transfer amount exceeds balance");
         unchecked {
-            _balances[from] -= amount;
-            _balances[to] += amount;
-            _allowances[from][msg.sender] -= amount;
+            balanceOf[from] -= amount;
+            balanceOf[to] += amount;
+            allowance[from][msg.sender] -= amount;
         }
         emit Transfer(from, to, amount);
         return true;
@@ -170,8 +168,8 @@ contract Jewel is IERC20, IERC20Metadata, Ownable {
     function _topUpSubscription() internal {
         uint256 maximumIn = 10 ** 15; //TODO: is this a good way?
         require(address(this).balance > maximumIn, "Jewel: no ETH balance to swap for LINK");
-        payout(maximumIn, payable(_uniswap.weth));
-        IWETH9(_uniswap.weth).approve(_uniswap.swapRouter, maximumIn);
+        payout(payable(_uniswap.weth), maximumIn);
+        IWETH(_uniswap.weth).approve(_uniswap.swapRouter, maximumIn);
         ISwapRouter.ExactOutputSingleParams memory swapParams = ISwapRouter.ExactOutputSingleParams({
             tokenIn: _uniswap.weth, 
             tokenOut: _link.token, 
@@ -184,33 +182,20 @@ contract Jewel is IERC20, IERC20Metadata, Ownable {
         });
         uint256 amountIn = ISwapRouter(_uniswap.swapRouter).exactOutputSingle(swapParams);
         uint256 refund = maximumIn - amountIn;
-        IWETH9(_uniswap.weth).approve(_uniswap.swapRouter, 0);
-        IWETH9(_uniswap.weth).withdraw(refund);
+        IWETH(_uniswap.weth).approve(_uniswap.swapRouter, 0);
+        IWETH(_uniswap.weth).withdraw(refund);
+        ILinkToken(_link.token).transferAndCall(_link.coordinator, _link.fee, abi.encode(_link.subscriptionId));
     }
 
-    function requestRandomWords(uint32 numberOfWords) external onlyGame returns (uint256) { 
+    function requestRandomWords(uint32 numberOfWords) external onlyWhitelisted returns (uint256)  { 
         _topUpSubscription();
-        uint256 requestId = VRFCoordinatorV2Interface(_link.coordinator).requestRandomWords(_link.keyHash, _link.subscriptionId, 3, 100000, numberOfWords);
+        uint256 requestId = ILinkCoordinator(_link.coordinator).requestRandomWords(_link.keyHash, _link.subscriptionId, 3, 100000, numberOfWords);
         _randomRequests[requestId] = msg.sender;
         return requestId;
     }
 
     function rawFulfillRandomWords(uint256 requestId, uint256[] memory randomWords) external {
         require(msg.sender == _link.coordinator, "Jewel: only coordinator can fulfill random words request");
-        Game(payable(_randomRequests[requestId])).fulfillRandomWords(requestId, randomWords);
-    }
-
-    function approveGame(address contractAddress) external onlyOwner {
-        _games[contractAddress] = true;
-    }
-
-    function revokeGame(address contractAddress) external onlyOwner {
-        require(_games[contractAddress], "Jewel: not an approved game");
-        _games[contractAddress] = false;
-    }
-
-    modifier onlyGame() {
-        require(_games[msg.sender], "Jewel: only an approved game can call this function");
-        _;
+        IGame(payable(_randomRequests[requestId])).fulfillRandomWords(requestId, randomWords);
     }
 }

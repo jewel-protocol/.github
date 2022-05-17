@@ -1,7 +1,12 @@
 const config = require("hardhat/config");
 const link = require("../utility/log").linkAddress;
 const format = require("../utility/log").formatAmount;
-const ERC20Abi = require("@openzeppelin/contracts/build/contracts/ERC20.json").abi;
+
+const ERC20Abi = [
+    "function symbol() external view returns (string)",
+    "function decimals() external view returns (uint8)",
+    "function balanceOf(address) external view returns (uint256)"
+];
 
 config.task("balance", "Prints an address's balance")
     .addOptionalParam("address", "The account's address to look up the balance for")
@@ -24,5 +29,5 @@ config.task("balance", "Prints an address's balance")
         }
 
         const formattedAmount = format(balance, symbol, args.token, decimals, precision);
-        console.log(`Account ${link(account.toLowerCase())} has ${formattedAmount}`);
+        console.log(`Account ${link(account)} has ${formattedAmount}`);
     });
